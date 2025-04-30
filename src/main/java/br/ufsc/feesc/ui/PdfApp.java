@@ -28,12 +28,16 @@ import javafx.scene.layout.VBox;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 
+import javafx.scene.text.Text;
+
 public class PdfApp extends Application {
 
     private File selectedFile;
     private int offset = 0;
     private Image pdfImage;
     private ImageView pdfImageView;
+    private ComboBox<String> rubricaComboBox; // Adicionado para selecionar rubrica
+    private Text tutorialText; // Adicionado para o tutorial
 
     @Override
     public void start(Stage primaryStage) {
@@ -41,16 +45,52 @@ public class PdfApp extends Application {
 
         primaryStage.setTitle("Folha de Ponto Editor");
 
+        // Definir o ícone da janela
+        try {
+            Image icon = new Image(getClass().getResourceAsStream("/icones/icon.png"));
+            primaryStage.getIcons().add(icon);
+        } catch (Exception e) {
+            System.out.println("Erro ao carregar o ícone: " + e.getMessage());
+        }
+
         Button btnSelectPdf = new Button("Carregar PDF");
         Button btnMoveUp = new Button("Mover para Cima");
         Button btnMoveDown = new Button("Mover para Baixo");
         Button btnOK = new Button("OK");
+
+        // Criar o ComboBox para selecionar a rubrica
+        rubricaComboBox = new ComboBox<>();
+        rubricaComboBox.setPromptText("Selecione a rubrica");
+
+        // Listar arquivos da pasta resources/rubrica/
+        File rubricaDir = new File("src/main/resources/rubrica/");
+        if (rubricaDir.exists() && rubricaDir.isDirectory()) {
+            File[] rubricaFiles = rubricaDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
+            if (rubricaFiles != null) {
+                for (File file : rubricaFiles) {
+                    rubricaComboBox.getItems().add(file.getName());
+                }
+            }
+        }
+        // Definir um valor padrão (opcional)
+        if (!rubricaComboBox.getItems().isEmpty()) {
+            rubricaComboBox.setValue(rubricaComboBox.getItems().get(0));
+        }
 
         Rectangle overlayRect = new Rectangle(170, 55, 120, 20);
         overlayRect.setFill(Color.TRANSPARENT);
         overlayRect.setStroke(Color.RED);
 
         pdfImageView = new ImageView();
+
+        // Criar o texto do tutorial
+        tutorialText = new Text( "<-- 1 clique aqui para carregar a folha ponto\n\n\n" +
+                                    "<-- 2 ajuste o quadrado em cima da cédula\n\n\n" +
+                                    "<-- 3 Selecione a rubrica\n\n" +
+                                    "<-- 4 aperte OK para Editar");
+        tutorialText.setLayoutX(150); // Posição ao lado dos botões
+        tutorialText.setLayoutY(50);
+        tutorialText.setVisible(true); // Visível inicialmente (sem arquivo carregado)
 
         btnSelectPdf.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
@@ -64,6 +104,7 @@ public class PdfApp extends Application {
 
                     if (dateInfo.getMonth() == -1 || dateInfo.getYear() == -1) {
                         System.out.println("Não foi possível extrair mês e ano.");
+                        selectedFile = null; // Resetar se falhar
                         return;
                     }
 
@@ -83,11 +124,16 @@ public class PdfApp extends Application {
                     // Desloca a imagem para a direita
                     pdfImageView.setLayoutX(50); //
 
+                    tutorialText.setVisible(false);
+
                 } catch (Exception ex) {
                     ex.printStackTrace();
+                    selectedFile = null; // Resetar em caso de erro
+                    tutorialText.setVisible(true); // Mostrar tutorial novamente
                 }
             } else {
                 System.out.println("Por favor, selecione um arquivo PDF.");
+                tutorialText.setVisible(true); // Garantir que o tutorial fique visível
             }
         });
 
@@ -103,6 +149,18 @@ public class PdfApp extends Application {
 
         btnOK.setOnAction(e -> {
             if (selectedFile != null) {
+
+                String selectedRubrica = rubricaComboBox.getValue();
+                if (selectedRubrica == null) {
+                    Alert alerta = new Alert(Alert.AlertType.WARNING);
+                    alerta.setTitle("Aviso");
+                    alerta.setHeaderText(null);
+                    alerta.setContentText("Por favor, selecione uma rubrica antes de continuar.");
+                    alerta.showAndWait();
+                    return;
+                }
+
+                String rubricaPath = "src/main/resources/rubrica/" + selectedRubrica;
                 PdfExtractor extractor = new PdfExtractor();
                 try {
                     DateInfo dateInfo = extractor.extractMonthAndYear(selectedFile); // Reusa extração
@@ -117,7 +175,7 @@ public class PdfApp extends Application {
                     }
 
                     PdfHandler pdfHandler = new PdfHandler();
-                    pdfHandler.preencherPonto(selectedFile, dateInfo.getYear(), dateInfo.getMonth(), offset/2);
+                    pdfHandler.preencherPonto(selectedFile, dateInfo.getYear(), dateInfo.getMonth(), offset/2, rubricaPath);
                     System.out.println("Arquivo processado com sucesso!");
 
                     Alert sucesso = new Alert(Alert.AlertType.INFORMATION);
@@ -125,6 +183,11 @@ public class PdfApp extends Application {
                     sucesso.setHeaderText(null);
                     sucesso.setContentText("Folha de ponto preenchida com sucesso!");
                     sucesso.showAndWait();
+
+                    // Resetar o estado para a tela inicial
+                    selectedFile = null;
+                    pdfImageView.setImage(null); // Remover a imagem do PDF
+                    tutorialText.setVisible(true); // Mostrar o tutorial novamente
 
                 } catch (IOException ex) {
                     Alert erroIO = new Alert(Alert.AlertType.ERROR);
@@ -145,7 +208,8 @@ public class PdfApp extends Application {
         Pane pane = new Pane();
         pane.getChildren().add(pdfImageView);
         pane.getChildren().add(overlayRect);
-        pane.getChildren().add(new VBox(10, btnSelectPdf, btnMoveUp, btnMoveDown, btnOK));
+        pane.getChildren().add(new VBox(10, btnSelectPdf, btnMoveUp, btnMoveDown, rubricaComboBox, btnOK));
+        pane.getChildren().add(tutorialText); // Adicionar o tutorial ao pane
         Scene scene = new Scene(pane, 400, 200);
         primaryStage.setScene(scene);
         primaryStage.show();

@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class PdfHandler {
 
-    private static final String RUBRICA_PATH = "src/main/resources/rubrica/michel.png";
+    //private static final String RUBRICA_PATH = "src/main/resources/rubrica/michel.png";
 
     private final FeriadoService feriadoService;
     private final HorarioGenerator horarioGenerator;
@@ -26,7 +26,7 @@ public class PdfHandler {
         this.horarioGenerator = new HorarioGenerator();
     }
 
-    public void preencherPonto(File pdfFile, int ano, int mes, int offset) throws IOException {
+    public void preencherPonto(File pdfFile, int ano, int mes, int offset, String rubricaPath) throws IOException {
         // Carregar o documento PDF usando o arquivo selecionado
         PDDocument document = Loader.loadPDF(pdfFile);
         PDPage page = document.getPage(0);
@@ -67,7 +67,7 @@ public class PdfHandler {
 
                 for (int i = 0; i < 2; i++) {
                     contentStream.drawImage(
-                            PDImageXObject.createFromFile(RUBRICA_PATH, document),
+                            PDImageXObject.createFromFile(rubricaPath, document),
                             165 + 110 + 190 * i,
                             yEntradaManha - 4,
                             40,
