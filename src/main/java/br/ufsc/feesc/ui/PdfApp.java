@@ -25,6 +25,9 @@ import javax.imageio.ImageIO;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.layout.VBox;
 
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+
 public class PdfApp extends Application {
 
     private File selectedFile;
@@ -105,18 +108,37 @@ public class PdfApp extends Application {
                     DateInfo dateInfo = extractor.extractMonthAndYear(selectedFile); // Reusa extração
 
                     if (dateInfo.getMonth() == -1 || dateInfo.getYear() == -1) {
-                        System.out.println("Não foi possível extrair mês e ano");
+                        Alert erroExtracao = new Alert(Alert.AlertType.WARNING);
+                        erroExtracao.setTitle("Erro na Extração");
+                        erroExtracao.setHeaderText(null);
+                        erroExtracao.setContentText("Não foi possível extrair mês e ano do PDF.");
+                        erroExtracao.showAndWait();
                         return;
                     }
 
                     PdfHandler pdfHandler = new PdfHandler();
                     pdfHandler.preencherPonto(selectedFile, dateInfo.getYear(), dateInfo.getMonth(), offset/2);
                     System.out.println("Arquivo processado com sucesso!");
+
+                    Alert sucesso = new Alert(Alert.AlertType.INFORMATION);
+                    sucesso.setTitle("Sucesso");
+                    sucesso.setHeaderText(null);
+                    sucesso.setContentText("Folha de ponto preenchida com sucesso!");
+                    sucesso.showAndWait();
+
                 } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+                    Alert erroIO = new Alert(Alert.AlertType.ERROR);
+                    erroIO.setTitle("Erro");
+                    erroIO.setHeaderText("Falha ao processar o PDF");
+                    erroIO.setContentText("Erro: " + ex.getMessage());
+                    erroIO.showAndWait();
                 }
             } else {
-                System.out.println("Por favor, selecione um arquivo PDF.");
+                Alert alerta = new Alert(Alert.AlertType.WARNING);
+                alerta.setTitle("Aviso");
+                alerta.setHeaderText(null);
+                alerta.setContentText("Por favor, selecione um arquivo PDF antes de continuar.");
+                alerta.showAndWait();
             }
         });
 
