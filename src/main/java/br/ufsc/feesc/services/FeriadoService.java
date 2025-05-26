@@ -34,10 +34,13 @@ public class FeriadoService {
         // Calculando datas de feriados móveis
         LocalDate carnaval = pascoa.minusDays(47); // Carnaval: 47 dias antes da Páscoa
         LocalDate sextaFeiraSanta = pascoa.minusDays(2); // Sexta-feira Santa: 2 dias antes da Páscoa
+        LocalDate corpusChristi = pascoa.plusDays(60); // Corpus Christ
 
         Set<String> feriadosMoveis = new HashSet<>();
         feriadosMoveis.add(formatarData(carnaval));
         feriadosMoveis.add(formatarData(sextaFeiraSanta));
+        feriadosMoveis.add(formatarData(corpusChristi));
+
 
         // Verificar se é um feriado móvel baseado no ano e data completa
         String diaMes = dataCompleta.substring(8, 10) + "-" + dataCompleta.substring(5, 7);

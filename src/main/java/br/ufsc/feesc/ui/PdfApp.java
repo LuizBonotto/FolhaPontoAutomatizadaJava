@@ -85,11 +85,11 @@ public class PdfApp extends Application {
 
         // Criar o texto do tutorial
         tutorialText = new Text( "<-- 1 clique aqui para carregar a folha ponto\n\n\n" +
-                                    "<-- 2 ajuste o quadrado em cima da cédula\n\n\n" +
+                                    "<-- 2 ajuste o quadrado em cima da cédula\n\n\n\n" +
                                     "<-- 3 Selecione a rubrica\n\n" +
                                     "<-- 4 aperte OK para Editar");
         tutorialText.setLayoutX(150); // Posição ao lado dos botões
-        tutorialText.setLayoutY(50);
+        tutorialText.setLayoutY(17);
         tutorialText.setVisible(true); // Visível inicialmente (sem arquivo carregado)
 
         btnSelectPdf.setOnAction(e -> {
