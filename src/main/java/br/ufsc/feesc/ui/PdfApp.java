@@ -5,11 +5,13 @@ import br.ufsc.feesc.pdf.PdfExtractor;
 import br.ufsc.feesc.pdf.PdfHandler;
 
 import javafx.application.Application;
+import javafx.geometry.Insets;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -21,14 +23,14 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.util.Optional; // <<< MUDANÇA: Import necessário
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.layout.VBox;
 
-import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 
 import javafx.scene.text.Text;
+import javafx.util.Pair; // <<< MUDANÇA: Import necessário
 
 public class PdfApp extends Application {
 
@@ -36,8 +38,9 @@ public class PdfApp extends Application {
     private int offset = 0;
     private Image pdfImage;
     private ImageView pdfImageView;
-    private ComboBox<String> rubricaComboBox; // Adicionado para selecionar rubrica
-    private Text tutorialText; // Adicionado para o tutorial
+    private ComboBox<String> rubricaComboBox;
+    private Text tutorialText;
+    private DateInfo currentDateInfo; // <<< MUDANÇA: Para guardar a data globalmente
 
     @Override
     public void start(Stage primaryStage) {
@@ -45,7 +48,6 @@ public class PdfApp extends Application {
 
         primaryStage.setTitle("Folha de Ponto Editor");
 
-        // Definir o ícone da janela
         try {
             Image icon = new Image(getClass().getResourceAsStream("/icones/icon.png"));
             primaryStage.getIcons().add(icon);
@@ -58,11 +60,9 @@ public class PdfApp extends Application {
         Button btnMoveDown = new Button("Mover para Baixo");
         Button btnOK = new Button("OK");
 
-        // Criar o ComboBox para selecionar a rubrica
         rubricaComboBox = new ComboBox<>();
         rubricaComboBox.setPromptText("Selecione a rubrica");
 
-        // Listar arquivos da pasta resources/rubrica/
         File rubricaDir = new File("src/main/resources/rubrica/");
         if (rubricaDir.exists() && rubricaDir.isDirectory()) {
             File[] rubricaFiles = rubricaDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
@@ -72,7 +72,6 @@ public class PdfApp extends Application {
                 }
             }
         }
-        // Definir um valor padrão (opcional)
         if (!rubricaComboBox.getItems().isEmpty()) {
             rubricaComboBox.setValue(rubricaComboBox.getItems().get(0));
         }
@@ -83,14 +82,13 @@ public class PdfApp extends Application {
 
         pdfImageView = new ImageView();
 
-        // Criar o texto do tutorial
         tutorialText = new Text( "<-- 1 clique aqui para carregar a folha ponto\n\n\n" +
-                                    "<-- 2 ajuste o quadrado em cima da cédula\n\n\n\n" +
-                                    "<-- 3 Selecione a rubrica\n\n" +
-                                    "<-- 4 aperte OK para Editar");
-        tutorialText.setLayoutX(150); // Posição ao lado dos botões
+                "<-- 2 ajuste o quadrado em cima da cédula\n\n\n\n" +
+                "<-- 3 Selecione a rubrica\n\n" +
+                "<-- 4 aperte OK para Editar");
+        tutorialText.setLayoutX(150);
         tutorialText.setLayoutY(17);
-        tutorialText.setVisible(true); // Visível inicialmente (sem arquivo carregado)
+        tutorialText.setVisible(true);
 
         btnSelectPdf.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
@@ -100,40 +98,48 @@ public class PdfApp extends Application {
             if (selectedFile != null) {
                 try {
                     PdfExtractor extractor = new PdfExtractor();
-                    DateInfo dateInfo = extractor.extractMonthAndYear(selectedFile); // Extrai mês e ano
+                    currentDateInfo = extractor.extractMonthAndYear(selectedFile); // Extrai mês e ano
 
-                    if (dateInfo.getMonth() == -1 || dateInfo.getYear() == -1) {
-                        System.out.println("Não foi possível extrair mês e ano.");
-                        selectedFile = null; // Resetar se falhar
-                        return;
+                    // <<< MUDANÇA: Lógica para pedir dados ao usuário
+                    if (currentDateInfo.getMonth() == -1 || currentDateInfo.getYear() == -1) {
+                        System.out.println("Não foi possível extrair mês e ano. Pedindo ao usuário...");
+
+                        // Chama o dialog para pegar o mês e ano manualmente
+                        Optional<DateInfo> manualDateInfo = askForMonthAndYear();
+
+                        if (manualDateInfo.isPresent()) {
+                            currentDateInfo = manualDateInfo.get(); // Atualiza com os dados do usuário
+                        } else {
+                            // Se o usuário cancelar, a operação é abortada
+                            Alert alert = new Alert(AlertType.WARNING, "Operação cancelada. Mês e ano são necessários para continuar.");
+                            alert.showAndWait();
+                            selectedFile = null;
+                            return; // Sai da ação do botão
+                        }
                     }
 
-                    System.out.println("Mes: " + dateInfo.getMonth() + " Ano: " + dateInfo.getYear());
+                    System.out.println("Usando - Mes: " + currentDateInfo.getMonth() + " Ano: " + currentDateInfo.getYear());
 
                     BufferedImage bufferedImage = renderPdfToImage(selectedFile);
                     pdfImage = SwingFXUtils.toFXImage(bufferedImage, null);
                     pdfImageView.setImage(pdfImage);
 
-                    Rectangle2D viewport = new Rectangle2D(0,180,350,150); // Ajuste conforme necessário
+                    Rectangle2D viewport = new Rectangle2D(0,180,350,150);
                     pdfImageView.setViewport(viewport);
-
-                    // Defina a escala fixa desejada
                     pdfImageView.setScaleX(2);
                     pdfImageView.setScaleY(2);
-
-                    // Desloca a imagem para a direita
-                    pdfImageView.setLayoutX(50); //
+                    pdfImageView.setLayoutX(50);
 
                     tutorialText.setVisible(false);
 
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    selectedFile = null; // Resetar em caso de erro
-                    tutorialText.setVisible(true); // Mostrar tutorial novamente
+                    selectedFile = null;
+                    tutorialText.setVisible(true);
                 }
             } else {
                 System.out.println("Por favor, selecione um arquivo PDF.");
-                tutorialText.setVisible(true); // Garantir que o tutorial fique visível
+                tutorialText.setVisible(true);
             }
         });
 
@@ -148,7 +154,7 @@ public class PdfApp extends Application {
         });
 
         btnOK.setOnAction(e -> {
-            if (selectedFile != null) {
+            if (selectedFile != null && currentDateInfo != null) { // <<< MUDANÇA: Verifica se currentDateInfo não é nulo
 
                 String selectedRubrica = rubricaComboBox.getValue();
                 if (selectedRubrica == null) {
@@ -161,21 +167,11 @@ public class PdfApp extends Application {
                 }
 
                 String rubricaPath = "src/main/resources/rubrica/" + selectedRubrica;
-                PdfExtractor extractor = new PdfExtractor();
+
                 try {
-                    DateInfo dateInfo = extractor.extractMonthAndYear(selectedFile); // Reusa extração
-
-                    if (dateInfo.getMonth() == -1 || dateInfo.getYear() == -1) {
-                        Alert erroExtracao = new Alert(Alert.AlertType.WARNING);
-                        erroExtracao.setTitle("Erro na Extração");
-                        erroExtracao.setHeaderText(null);
-                        erroExtracao.setContentText("Não foi possível extrair mês e ano do PDF.");
-                        erroExtracao.showAndWait();
-                        return;
-                    }
-
                     PdfHandler pdfHandler = new PdfHandler();
-                    pdfHandler.preencherPonto(selectedFile, dateInfo.getYear(), dateInfo.getMonth(), offset/2, rubricaPath);
+                    // <<< MUDANÇA: Usa a variável currentDateInfo que já temos
+                    pdfHandler.preencherPonto(selectedFile, currentDateInfo.getYear(), currentDateInfo.getMonth(), offset/2, rubricaPath);
                     System.out.println("Arquivo processado com sucesso!");
 
                     Alert sucesso = new Alert(Alert.AlertType.INFORMATION);
@@ -184,10 +180,10 @@ public class PdfApp extends Application {
                     sucesso.setContentText("Folha de ponto preenchida com sucesso!");
                     sucesso.showAndWait();
 
-                    // Resetar o estado para a tela inicial
                     selectedFile = null;
-                    pdfImageView.setImage(null); // Remover a imagem do PDF
-                    tutorialText.setVisible(true); // Mostrar o tutorial novamente
+                    pdfImageView.setImage(null);
+                    tutorialText.setVisible(true);
+                    currentDateInfo = null; // <<< MUDANÇA: Reseta a data
 
                 } catch (IOException ex) {
                     Alert erroIO = new Alert(Alert.AlertType.ERROR);
@@ -209,17 +205,64 @@ public class PdfApp extends Application {
         pane.getChildren().add(pdfImageView);
         pane.getChildren().add(overlayRect);
         pane.getChildren().add(new VBox(10, btnSelectPdf, btnMoveUp, btnMoveDown, rubricaComboBox, btnOK));
-        pane.getChildren().add(tutorialText); // Adicionar o tutorial ao pane
+        pane.getChildren().add(tutorialText);
         Scene scene = new Scene(pane, 400, 200);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
+    // <<< MUDANÇA: NOVO MÉTODO PARA CRIAR A CAIXA DE DIÁLOGO
+    private Optional<DateInfo> askForMonthAndYear() {
+        // Cria uma nova caixa de diálogo
+        Dialog<DateInfo> dialog = new Dialog<>();
+        dialog.setTitle("Entrada Manual");
+        dialog.setHeaderText("Não foi possível detectar o mês e o ano.\nPor favor, insira manualmente.");
+
+        // Adiciona os botões de OK e Cancelar
+        ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+        // Cria o layout para os campos de texto
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField monthField = new TextField();
+        monthField.setPromptText("Mês (1-12)");
+        TextField yearField = new TextField();
+        yearField.setPromptText("Ano (ex: 2024)");
+
+        grid.add(new Label("Mês:"), 0, 0);
+        grid.add(monthField, 1, 0);
+        grid.add(new Label("Ano:"), 0, 1);
+        grid.add(yearField, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Converte o resultado do diálogo para um objeto DateInfo quando o botão OK for clicado
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == okButtonType) {
+                try {
+                    int month = Integer.parseInt(monthField.getText());
+                    int year = Integer.parseInt(yearField.getText());
+                    if (month >= 1 && month <= 12 && year > 1900) {
+                        return new DateInfo(month, year);
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignora se não for número, vai retornar null e o alerta será exibido
+                }
+            }
+            return null; // Retorna nulo se o usuário cancelar ou inserir dados inválidos
+        });
+
+        return dialog.showAndWait();
+    }
+
     private BufferedImage renderPdfToImage(File pdfFile) throws Exception {
         try (PDDocument document = Loader.loadPDF(pdfFile)) {
             PDFRenderer pdfRenderer = new PDFRenderer(document);
-            BufferedImage bufferedImage = pdfRenderer.renderImage(0);
-            return bufferedImage;
+            return pdfRenderer.renderImage(0);
         }
     }
 

@@ -16,4 +16,12 @@ public class DateInfo {
     public int getYear() {
         return year;
     }
+
+    public void setMonth(int month) {
+        this.month = month;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
 }
