@@ -1,12 +1,15 @@
 package br.ufsc.feesc.services;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class FeriadoService {
 
     private static final Set<String> feriadosFixos = new HashSet<>();
+    private static final List<PeriodoFerias> ferias = new ArrayList<>();
 
     static {
         // Feriados fixos nacionais no formato "dd-MM"
@@ -17,13 +20,48 @@ public class FeriadoService {
         feriadosFixos.add("01-05"); // Dia do Trabalho
         feriadosFixos.add("15-11"); // Proclamação da República
         feriadosFixos.add("20-11"); // Dia da Consciência Negra
+
+        ferias.add(new PeriodoFerias(
+                LocalDate.of(2025, 12, 22),
+                LocalDate.of(2026, 1, 5)
+        ));
+
+        ferias.add(new PeriodoFerias(
+                LocalDate.of(2026, 1, 26),
+                LocalDate.of(2026, 2, 4)
+        ));
+
+        ferias.add(new PeriodoFerias(
+                LocalDate.of(2026, 2, 23),
+                LocalDate.of(2026, 2, 27)
+        ));
+    }
+
+    // Classe interna representando cada período de férias
+    private static class PeriodoFerias {
+        LocalDate inicio;
+        LocalDate fim;
+
+        PeriodoFerias(LocalDate inicio, LocalDate fim) {
+            this.inicio = inicio;
+            this.fim = fim;
+        }
     }
 
     public boolean isFeriado(String dataCompleta) {
         // Extrair o dia e o mês do formato "yyyy-MM-dd"
         String diaMes = dataCompleta.substring(8, 10) + "-" + dataCompleta.substring(5, 7);
+        LocalDate data = LocalDate.parse(dataCompleta);
+        return feriadosFixos.contains(diaMes) || isFeriadoMovel(dataCompleta) || isFerias(data);
+    }
 
-        return feriadosFixos.contains(diaMes) || isFeriadoMovel(dataCompleta);
+    private boolean isFerias(LocalDate data) {
+        for (PeriodoFerias periodo : ferias) {
+            if (!data.isBefore(periodo.inicio) && !data.isAfter(periodo.fim)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Método para verificar feriados móveis
