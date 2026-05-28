@@ -14,6 +14,7 @@ public class FeriadoService {
     static {
         // Feriados fixos nacionais no formato "dd-MM"
         feriadosFixos.add("01-01"); // Ano Novo
+        feriadosFixos.add("23-03"); // Niver Flops
         feriadosFixos.add("07-09"); // Independência
         feriadosFixos.add("21-04"); // Tiradentes
         feriadosFixos.add("25-12"); // Natal
@@ -21,20 +22,20 @@ public class FeriadoService {
         feriadosFixos.add("15-11"); // Proclamação da República
         feriadosFixos.add("20-11"); // Dia da Consciência Negra
 
-        ferias.add(new PeriodoFerias(
-                LocalDate.of(2025, 12, 22),
-                LocalDate.of(2026, 1, 5)
-        ));
-
-        ferias.add(new PeriodoFerias(
-                LocalDate.of(2026, 1, 26),
-                LocalDate.of(2026, 2, 4)
-        ));
-
-        ferias.add(new PeriodoFerias(
-                LocalDate.of(2026, 2, 23),
-                LocalDate.of(2026, 2, 27)
-        ));
+//        ferias.add(new PeriodoFerias(
+//                LocalDate.of(2025, 12, 22),
+//                LocalDate.of(2026, 1, 5)
+//        ));
+//
+//        ferias.add(new PeriodoFerias(
+//                LocalDate.of(2026, 1, 26),
+//                LocalDate.of(2026, 2, 4)
+//        ));
+//
+//        ferias.add(new PeriodoFerias(
+//                LocalDate.of(2026, 2, 23),
+//                LocalDate.of(2026, 2, 27)
+//        ));
     }
 
     // Classe interna representando cada período de férias

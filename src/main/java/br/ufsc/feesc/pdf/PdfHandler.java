@@ -52,27 +52,44 @@ public class PdfHandler {
             if (isDiaValido(calendario) && !feriadoService.isFeriado(data)) {
                 String[] horarios = horarioGenerator.gerarHorarios();
 
+                boolean isNovoFormato = (rubricaPath == null);
+
                 contentStream.beginText();
-                contentStream.newLineAtOffset(165, yEntradaManha);
 
-                contentStream.showText(horarios[0]);  // Entrada Manhã
-                contentStream.newLineAtOffset(60, 0);
-                contentStream.showText(horarios[1]);  // Saída Manhã
-                contentStream.newLineAtOffset(125, 0);
-                contentStream.showText(horarios[2]);  // Entrada Tarde
-                contentStream.newLineAtOffset(60, 0);
-                contentStream.showText(horarios[3]);  // Saída Tarde
-
+                if (isNovoFormato) {
+                    // LAYOUT NOVO (Sem Rubrica, mais centralizado)
+                    contentStream.newLineAtOffset(221, yEntradaManha); // Recuo inicial maior para centralizar
+                    contentStream.showText(horarios[0]);
+                    contentStream.newLineAtOffset(82, 0); // Distância entre Entrada e Saída (Manhã)
+                    contentStream.showText(horarios[1]);
+                    contentStream.newLineAtOffset(82, 0); // Distância do Almoço (Saída Manhã -> Entrada Tarde)
+                    contentStream.showText(horarios[2]);
+                    contentStream.newLineAtOffset(82, 0); // Distância entre Entrada e Saída (Tarde)
+                    contentStream.showText(horarios[3]);
+                } else {
+                    // LAYOUT ANTIGO (Com os espaços para as rúbricas)
+                    contentStream.newLineAtOffset(165, yEntradaManha);
+                    contentStream.showText(horarios[0]);  // Entrada Manhã
+                    contentStream.newLineAtOffset(60, 0);
+                    contentStream.showText(horarios[1]);  // Saída Manhã
+                    contentStream.newLineAtOffset(125, 0);
+                    contentStream.showText(horarios[2]);  // Entrada Tarde
+                    contentStream.newLineAtOffset(60, 0);
+                    contentStream.showText(horarios[3]);  // Saída Tarde
+                }
                 contentStream.endText();
 
-                for (int i = 0; i < 2; i++) {
-                    contentStream.drawImage(
-                            PDImageXObject.createFromFile(rubricaPath, document),
-                            165 + 110 + 190 * i,
-                            yEntradaManha - 4,
-                            40,
-                            12
-                    );
+                //Só desenha rubrica se for formato antigo
+                if (!isNovoFormato) {
+                    for (int i = 0; i < 2; i++) {
+                        contentStream.drawImage(
+                                PDImageXObject.createFromFile(rubricaPath, document),
+                                165 + 110 + 190 * i,
+                                yEntradaManha - 4,
+                                40,
+                                12
+                        );
+                    }
                 }
 
                 int horasDia = 8;

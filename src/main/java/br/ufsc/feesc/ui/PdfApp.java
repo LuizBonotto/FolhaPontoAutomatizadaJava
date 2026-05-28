@@ -62,8 +62,9 @@ public class PdfApp extends Application {
 
         rubricaComboBox = new ComboBox<>();
         rubricaComboBox.setPromptText("Selecione a rubrica");
+        rubricaComboBox.getItems().add("Sem Rubrica");
 
-        File rubricaDir = new File("src/main/resources/rubrica/");
+        File rubricaDir = new File("rubricas");
         if (rubricaDir.exists() && rubricaDir.isDirectory()) {
             File[] rubricaFiles = rubricaDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
             if (rubricaFiles != null) {
@@ -72,6 +73,8 @@ public class PdfApp extends Application {
                 }
             }
         }
+        rubricaComboBox.setValue("Sem Rubrica");
+
         if (!rubricaComboBox.getItems().isEmpty()) {
             rubricaComboBox.setValue(rubricaComboBox.getItems().get(0));
         }
@@ -157,16 +160,10 @@ public class PdfApp extends Application {
             if (selectedFile != null && currentDateInfo != null) { // <<< MUDANÇA: Verifica se currentDateInfo não é nulo
 
                 String selectedRubrica = rubricaComboBox.getValue();
-                if (selectedRubrica == null) {
-                    Alert alerta = new Alert(Alert.AlertType.WARNING);
-                    alerta.setTitle("Aviso");
-                    alerta.setHeaderText(null);
-                    alerta.setContentText("Por favor, selecione uma rubrica antes de continuar.");
-                    alerta.showAndWait();
-                    return;
+                String rubricaPath = null;
+                if (!"Sem Rubrica".equals(selectedRubrica)) {
+                    rubricaPath = "rubricas/" + selectedRubrica;
                 }
-
-                String rubricaPath = "src/main/resources/rubrica/" + selectedRubrica;
 
                 try {
                     PdfHandler pdfHandler = new PdfHandler();
